@@ -4,15 +4,15 @@ int REDPIN, GREENPIN, BLUEPIN;
 
 // maximum brightness for each color, use to modify final colours depending on LED choice
 float r_brightness = 1;
-float g_brightness = 0.7;
-float b_brightness = 0.7;
+float g_brightness = 1;
+float b_brightness = 1;
 
 int current_r, current_g, current_b = 0;
 
 float total_brightness = 1; //the overall brightness target 0(off) --> 1(max brightness)
 
 int current_kelvin = 0;
-int iteration_delay = 30;
+int iteration_delay = 10;
 
 void setup_rgb (int r_pin, int g_pin, int b_pin, float overall_brightness) {
 
@@ -32,13 +32,7 @@ void setup_rgb (int r_pin, int g_pin, int b_pin, float overall_brightness) {
 void fade_rgb(int r, int g, int b, int timespan)
 {
 
-
-  if(timespan < 30){
-    timespan=30;
-  }
-
   //if r,g,b currently = 0 i.e. off do a brightness fade_rgb
-
   double iterations = timespan/iteration_delay; //number of iterations between moves (delay between each step)
   Serial.printf("RGB Fading from (%d,%d,%d) to (%d,%d,%d) in %d ms with %f iterations\n",current_r, current_g,current_b,r,g,b,timespan,iterations);
 
@@ -62,52 +56,44 @@ void fade_rgb(int r, int g, int b, int timespan)
      set_rgb(new_r, new_g, new_b);
      //Serial.printf("(%f,%f,%f)\n", new_r,new_g,new_b);
 
-     // wait for 30 milliseconds to see the dimming effect
-     delay(30);
+     delay(iteration_delay);
   }
 
   set_rgb(r, g, b); //make sure were bang on at the end
   elapsed = millis() - start; //crashing somewhere here !!!!
   Serial.printf("Fade took %f ms\n", elapsed);
   Serial.println("Fading Complete");
-
 }
 
 void fade_kelvin(int to_kelvin, int timespan)
 {
-
   Serial.println("Kelvin Fading");
-  if(timespan < 30){timespan=30;}
   int iterations = timespan/iteration_delay; //number of iterations between moves (30ms delay
   float fadeAmount =  (current_kelvin - to_kelvin) / iterations;
   for(int i=0; i<iterations;i++)
     {
       set_colour_temperature(current_kelvin-fadeAmount);
-      // wait for 30 milliseconds to see the dimming effect
       delay(iteration_delay);
+      yield();
     }
-
     Serial.println("Fading Complete");
 }
 
 void rgb_apply(double r, double g, double b)
 {
-    r = constrain(r, 0, 255);
-    g = constrain(g, 0, 255);
-    b = constrain(b, 0, 255);
+  r = constrain(r, 0, 255);
+  g = constrain(g, 0, 255);
+  b = constrain(b, 0, 255);
 
-    current_r = r; //store latest values for fading purposes
-    current_g = g;
-    current_b = b;
+  current_r = r; //store latest values for fading purposes
+  current_g = g;
+  current_b = b;
 
-    //Serial.println(r);
-    //Serial.println(g);
-    //Serial.println(b);
-
-    analogWrite(REDPIN, current_r * total_brightness);
-    analogWrite(GREENPIN, current_g * total_brightness);
-    analogWrite(BLUEPIN, current_b * total_brightness);
+  analogWrite(REDPIN, current_r * total_brightness);
+  analogWrite(GREENPIN, current_g * total_brightness);
+  analogWrite(BLUEPIN, current_b * total_brightness);
 }
+
 void kelvin_apply(int r, int g, int b)
 {
     r = constrain(r, 0, 255);
