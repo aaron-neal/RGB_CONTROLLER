@@ -34,13 +34,13 @@ void fade_rgb(int r, int g, int b, int timespan)
 
   //if r,g,b currently = 0 i.e. off do a brightness fade_rgb
   double iterations = timespan/iteration_delay; //number of iterations between moves (delay between each step)
-  Serial.printf("RGB Fading from (%d,%d,%d) to (%d,%d,%d) in %d ms with %f iterations\n",current_r, current_g,current_b,r,g,b,timespan,iterations);
+  //Serial.printf("RGB Fading from (%d,%d,%d) to (%d,%d,%d) in %d ms with %f iterations\n",current_r, current_g,current_b,r,g,b,timespan,iterations);
 
   double rfadeAmount =  (current_r - r) / iterations;
   double gfadeAmount = (current_g - g) / iterations;
   double bfadeAmount =  (current_b - b) / iterations;
 
-  Serial.printf("Fade amounts(%f,%f,%f)\n", rfadeAmount,gfadeAmount,bfadeAmount);
+  //Serial.printf("Fade amounts(%f,%f,%f)\n", rfadeAmount,gfadeAmount,bfadeAmount);
   double new_r, new_g, new_b;
 
   new_r = current_r;
@@ -61,13 +61,13 @@ void fade_rgb(int r, int g, int b, int timespan)
 
   set_rgb(r, g, b); //make sure were bang on at the end
   elapsed = millis() - start; //crashing somewhere here !!!!
-  Serial.printf("Fade took %f ms\n", elapsed);
-  Serial.println("Fading Complete");
+  //Serial.printf("Fade took %f ms\n", elapsed);
+  //Serial.println("Fading Complete");
 }
 
 void fade_kelvin(int to_kelvin, int timespan)
 {
-  Serial.println("Kelvin Fading");
+  //Serial.println("Kelvin Fading");
   int iterations = timespan/iteration_delay; //number of iterations between moves (30ms delay
   float fadeAmount =  (current_kelvin - to_kelvin) / iterations;
   for(int i=0; i<iterations;i++)
@@ -76,7 +76,7 @@ void fade_kelvin(int to_kelvin, int timespan)
       delay(iteration_delay);
       yield();
     }
-    Serial.println("Fading Complete");
+    //Serial.println("Fading Complete");
 }
 
 void rgb_apply(double r, double g, double b)
