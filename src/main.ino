@@ -13,17 +13,18 @@
 WiFiClient wclient;//WiFi Object
 PubSubClient client(wclient);//MQTT Object
 ESP8266WebServer server(80);
+
 /* PIN DEFINES */
 #define R_PIN 12
 #define G_PIN 13
 #define B_PIN 14
 
-//const char *ssid =  "mmadn-tplink-2.4";   // cannot be longer than 32 characters!
-//const char *pass =  "e63a3cb942";   //wifi password
+
 char mqttBroker[40] =  "";
 char mqttUsername[40] = "";
 char mqttPassword[40] = "";
 char mqttPort[6] = "";
+char deviceName[40] = "";
 
 char mdnsName[40] = "";
 
@@ -54,7 +55,7 @@ void commandDecode(String rawCommand){
     debug(rawCommand);
     return;
   }
-  Serial.println(rawCommand);
+  debug(rawCommand);
   String command = root["command"];
   int r = root["r"];
   int g = root["g"];
@@ -90,6 +91,16 @@ void commandDecode(String rawCommand){
      //turn lights off
     debug("Command: lights_off");
     rgb_off(); //make sure the lights start off!
+  } else if(command == "reset_settings") {
+     //turn lights off
+    debug("Command: reset_settings");
+    WiFiManager wifiManager;
+    SPIFFS.format();
+    wifiManager.resetSettings();
+    delay(3000);
+    //reset and try again, or maybe put it to deep sleep
+    ESP.reset();
+    delay(5000);
   } else {
     debug("That command is  not supported");
   }
@@ -121,14 +132,14 @@ bool shouldSaveConfig = false;
 
 //callback notifying us of the need to save config
 void saveConfigCallback () {
-  Serial.println("Should save config");
+  debug("Should save config");
   shouldSaveConfig = true;
 }
 
 void setup () {
   // put your setup code here, to run once:
    Serial.begin(115200);
-   Serial.println();
+   debug("WiFi RGB Booting");
 
    //WiFiManager
    WiFiManager wifiManager;
@@ -139,10 +150,11 @@ void setup () {
    //read configuration from FS json
    openConfig();
 
-   WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqttBroker, 40);
-   WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqttPort, 5);
-   WiFiManagerParameter custom_mqtt_username("username", "mqtt username", mqttUsername, 40);
-   WiFiManagerParameter custom_mqtt_password("password", "mqtt password", mqttPassword, 40);
+   WiFiManagerParameter custom_device_name("name", "device name", deviceName, 40);
+   WiFiManagerParameter custom_mqtt_server("server", "mqtt server (optional)", mqttBroker, 40);
+   WiFiManagerParameter custom_mqtt_port("port", "mqtt port (optional)", mqttPort, 5);
+   WiFiManagerParameter custom_mqtt_username("username", "mqtt username (optional)", mqttUsername, 40);
+   WiFiManagerParameter custom_mqtt_password("password", "mqtt password (optional)", mqttPassword, 40);
 
 
 
@@ -150,6 +162,7 @@ void setup () {
    wifiManager.setSaveConfigCallback(saveConfigCallback);
 
    //add all your parameters here
+   wifiManager.addParameter(&custom_device_name);
    wifiManager.addParameter(&custom_mqtt_server);
    wifiManager.addParameter(&custom_mqtt_port);
    wifiManager.addParameter(&custom_mqtt_username);
@@ -166,7 +179,7 @@ void setup () {
    //here  "AutoConnectAP"
    //and goes into a blocking loop awaiting configuration
    if (!wifiManager.autoConnect("RGB_WiFi", "password")) {
-     Serial.println("failed to connect and hit timeout");
+     debug("failed to connect and hit timeout");
      delay(3000);
      //reset and try again, or maybe put it to deep sleep
      ESP.reset();
@@ -174,10 +187,10 @@ void setup () {
    }
 
    //if you get here you have connected to the WiFi
-   Serial.println("WiFi connected");
-
+   debug("WiFi connected");
 
    //read updated parameters
+   strcpy(deviceName, custom_device_name.getValue());
    strcpy(mqttBroker, custom_mqtt_server.getValue());
    strcpy(mqttPort, custom_mqtt_port.getValue());
    strcpy(mqttUsername, custom_mqtt_username.getValue());
@@ -189,8 +202,8 @@ void setup () {
      saveConfig();
    }
 
-   Serial.println("local ip");
-   Serial.println(WiFi.localIP());
+   debug("local ip");
+   debug(WiFi.localIP().toString());
    mqttSetup();
    setup_rgb(R_PIN,G_PIN,B_PIN,1); //setup RGB LED strip
    fade_rgb(0,255,0,500);
@@ -198,41 +211,42 @@ void setup () {
 
    //server stuff
    if (MDNS.begin(mdnsName)) {
-     Serial.println("MDNS responder started");
+     debug("MDNS responder started");
+     MDNS.addService("http", "tcp", 80);
    }
 
    server.on("/", HTTP_POST, handleSubmit);
    server.on("/", HTTP_GET, handleRoot);
    server.onNotFound(handleNotFound);
 
-
-  server.begin();
-  Serial.println("HTTP server started");
+   server.begin();
+   debug("HTTP server started");
 }
 
 void reconnect(void) {
-  while (!client.connected()) { // Loop until we're reconnected
+  int i = 0;
+  while (i<2 && !client.connected()) { // attempt 3 connections
      debug("MQTT Connecting...");
     // Attempt to connect, set LWT so that an offline status will be set when powered down
     if (client.connect(mqttID, mqttUsername, mqttPassword,mqttStatusChannel,1,1,"offline")) {
       debug("MQTT Connected");// Connected
       client.subscribe(mqttCommandChannel); //subscribe to command topic
       client.publish(mqttStatusChannel, "online",1); //let them know we're online
-
     } else {
       debug("MQTT Failed");
-      delay(500);// Wait before retrying
+      delay(100);// Wait before retrying
     }
+    i++;
   }
 }
 
 
 void loop(){
   client.loop(); //update MQTT client
-  server.handleClient();
+  server.handleClient(); //update server handling
   if (WiFi.status() == WL_CONNECTED)
-  {
-     if (!client.connected())
+  {    
+     if (!client.connected() && strlen(mqttBroker) != 0) //dont use MQTT if no broker set
      {
        reconnect();
      }
@@ -244,16 +258,16 @@ void loop(){
 }
 
 void openConfig(){
-  Serial.println("mounting FS...");
+  debug("mounting FS...");
 
   if (SPIFFS.begin()) {
-    Serial.println("mounted file system");
+    debug("mounted file system");
     if (SPIFFS.exists("/config.json")) {
       //file exists, reading and loading
-      Serial.println("reading config file");
+      debug("reading config file");
       File configFile = SPIFFS.open("/config.json", "r");
       if (configFile) {
-        Serial.println("opened config file");
+        debug("opened config file");
         size_t size = configFile.size();
         // Allocate a buffer to store contents of the file.
         std::unique_ptr<char[]> buf(new char[size]);
@@ -263,25 +277,27 @@ void openConfig(){
         JsonObject& json = jsonBuffer.parseObject(buf.get());
         json.printTo(Serial);
         if (json.success()) {
-          Serial.println("\nparsed json");
+          debug("\nparsed json");
+          strcpy(deviceName, json["device_name"]);
           strcpy(mqttBroker, json["mqtt_server"]);
           strcpy(mqttPort, json["mqtt_port"]);
           strcpy(mqttUsername, json["mqtt_username"]);
           strcpy(mqttPassword, json["mqtt_password"]);
         } else {
-          Serial.println("failed to load json config");
+          debug("failed to load json config");
         }
       }
     }
   } else {
-    Serial.println("failed to mount FS");
+    debug("failed to mount FS");
   }
 }
 
 void saveConfig(){
-  Serial.println("saving config");
+  debug("saving config");
   DynamicJsonBuffer jsonBuffer;
   JsonObject& json = jsonBuffer.createObject();
+  json["device_name"] = deviceName;
   json["mqtt_server"] = mqttBroker;
   json["mqtt_port"] = mqttPort;
   json["mqtt_username"] = mqttUsername;
@@ -289,7 +305,7 @@ void saveConfig(){
 
   File configFile = SPIFFS.open("/config.json", "w");
   if (!configFile) {
-    Serial.println("failed to open config file for writing");
+    debug("failed to open config file for writing");
   }
 
   json.printTo(Serial);
@@ -299,7 +315,9 @@ void saveConfig(){
 
 void handleRoot() {
   debug("Handling Root");
-  server.send(200,"text/html",RGB_SELECTOR_PAGE);
+  String webPage = RGB_SELECTOR_PAGE;
+  webPage.replace("{{}}",deviceName);
+  server.send(200,"text/html",webPage);
 }
 
 void handleSubmit() {
