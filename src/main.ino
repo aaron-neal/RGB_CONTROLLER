@@ -37,6 +37,7 @@ char mqttStatusChannel [50];
 char mqttDebugChannel [50];
 
 bool debugBool = true;
+int boot = 0;
 
 std::queue <String> mqttCommandQueue;
 
@@ -74,27 +75,27 @@ void commandDecode(String rawCommand){
   } else if(command == "set_rgb")  {
      //straight set an RGB colour
      debug("Command: set_rgb");
-     set_rgb(colourData);
+     setRGB(colourData);
   } else if(command =="fade_rgb") {
      //straight set an RGB colour
      debug("Command: fade_rgb");
-     fade_rgb(colourData,timespan);
+     fadeRGB(colourData,timespan);
   } else  if(command == "fade_kelvin"){
    //fade to a new colour temperature
      debug("Command: fade_kelvin");
-     fade_kelvin(kelvin, timespan);
+     fadeKelvin(kelvin, timespan);
   } else if(command =="set_kelvin"){
    //fade to a new colour temperature
      debug("Command: set_kelvin");
-     set_colour_temperature(kelvin);
+     setKelvin(kelvin);
   } else if(command == "set_brightness"){
    //fade to a new colour temperature
      debug("Command: set_brightness");
-     set_brightness(brightness);
+     setBrightness(brightness);
   } else if(command == "off"){
      //turn lights off
     debug("Command: lights_off");
-    rgb_off(); //make sure the lights start off!
+    off(); //make sure the lights start off!
   } else if(command == "reset_settings") {
      //turn lights off
     debug("Command: reset_settings");
@@ -210,10 +211,6 @@ void setup () {
    debug(WiFi.localIP().toString());
    mqttSetup();
    setupRGB(R_PIN,G_PIN,B_PIN,1); //setup RGB LED strip
-   rgb greenRGB = {0,255,0};
-   rgb offRGB = {0,0,0};
-   fade_rgb(greenRGB,500);
-   fade_rgb(offRGB,500); //show were up and running
 
    //server stuff
    if (MDNS.begin(mdnsName)) {
@@ -248,6 +245,14 @@ void reconnect(void) {
 
 
 void loop(){
+  if(boot == 0){
+    rgb greenRGB = {0,255,0};
+    rgb offRGB = {0,0,0};
+    fadeRGBBlocking(greenRGB,500);
+    fadeRGBBlocking(offRGB,500); //show were up and running
+    boot=1;
+  }
+
   client.loop(); //update MQTT client
   server.handleClient(); //update server handling
   rgbLoop();
