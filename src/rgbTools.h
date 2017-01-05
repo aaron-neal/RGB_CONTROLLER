@@ -12,5 +12,6 @@
   void setKelvin(int kelvin);
   void rgbLoop ();
   void fadeRGB(rgb fadeRGB, int timespan);
+  void fadeRGBBlocking(rgb fadeRGB, int timespan);
   void off();
 #endif

@@ -32,7 +32,7 @@ void setupRGB (int r_pin, int g_pin, int b_pin, double initialBrightness) {
   _brightness = initialBrightness;
 
   analogWriteRange(255); //use 0 --> 255 as pwm range
-  analogWriteFreq(300); //set PWM freq. 
+  analogWriteFreq(1000); //set PWM freq.
   delay(50);
   analogWrite(REDPIN, 0);
   analogWrite(GREENPIN, 0);
@@ -92,6 +92,29 @@ void fadeKelvin(int toKelvin, int timespan)
     //fade RGB
     fadeRGB(kelvinToRGB(toKelvin),timespan);
   }
+}
+
+void fadeRGBBlocking(rgb fadeRGB, int timespan){
+ timespan = max(timespan,_iterationDelay); //limit smallest timespan to be iteration delay
+ double iterations = timespan/_iterationDelay; //number of iterations between moves (delay between each step)
+
+ double rfadeAmount =  (_currentRGB.r - fadeRGB.r) / iterations;
+ double gfadeAmount = (_currentRGB.g - fadeRGB.g) / iterations;
+ double bfadeAmount =  (_currentRGB.b - fadeRGB.b) / iterations;
+
+ for(double i = 0; i<iterations; i++)
+ {
+    _currentRGB.r = _currentRGB.r - rfadeAmount;
+    _currentRGB.g = _currentRGB.g - gfadeAmount;
+    _currentRGB.b = _currentRGB.b - bfadeAmount;
+
+    analogWrite(REDPIN, _currentRGB.r * _brightness);
+    analogWrite(GREENPIN, _currentRGB.g * _brightness);
+    analogWrite(BLUEPIN, _currentRGB.b * _brightness);
+
+    delay(_iterationDelay);
+ }
+ _currentRGB = fadeRGB;
 }
 
 void setRGB(rgb setRGB)

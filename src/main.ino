@@ -37,6 +37,7 @@ char mqttStatusChannel [50];
 char mqttDebugChannel [50];
 
 bool debugBool = true;
+int boot = 0;
 
 std::queue <String> mqttCommandQueue;
 
@@ -210,10 +211,6 @@ void setup () {
    debug(WiFi.localIP().toString());
    mqttSetup();
    setupRGB(R_PIN,G_PIN,B_PIN,1); //setup RGB LED strip
-   rgb greenRGB = {0,255,0};
-   rgb offRGB = {0,0,0};
-   fadeRGB(greenRGB,500);
-   fadeRGB(offRGB,500); //show were up and running
 
    //server stuff
    if (MDNS.begin(mdnsName)) {
@@ -248,6 +245,14 @@ void reconnect(void) {
 
 
 void loop(){
+  if(boot == 0){
+    rgb greenRGB = {0,255,0};
+    rgb offRGB = {0,0,0};
+    fadeRGBBlocking(greenRGB,500);
+    fadeRGBBlocking(offRGB,500); //show were up and running
+    boot=1;
+  }
+
   client.loop(); //update MQTT client
   server.handleClient(); //update server handling
   rgbLoop();
