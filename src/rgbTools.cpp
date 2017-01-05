@@ -1,12 +1,10 @@
 #include "rgbTools.h"
 
-
-
 int REDPIN, GREENPIN, BLUEPIN;
 
-/* maximum brightness for each color, use to
-modify final colours depending on LED choice*/
-double _brightness = 1; //the overall brightness target 0(off) --> 1(max brightness)
+/* maximum brightness for the LEDs
+    0(off) --> 1(max brightness)  */
+double _brightness = 1; //consider a non-linear version for better brightness control
 
 //globals
 rgb _currentRGB;
