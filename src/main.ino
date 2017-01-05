@@ -9,6 +9,9 @@
 #include <WiFiManager.h>         //https://github.com/tzapu/WiFiManager
 #include <ESP8266mDNS.h>
 #include "webPage.h"
+#include "rgbTools.h"
+
+
 
 WiFiClient wclient;//WiFi Object
 PubSubClient client(wclient);//MQTT Object
@@ -57,12 +60,13 @@ void commandDecode(String rawCommand){
   }
   debug(rawCommand);
   String command = root["command"];
-  int r = root["r"];
-  int g = root["g"];
-  int b = root["b"];
+  rgb colourData;
+  colourData.r = root["r"];
+  colourData.g = root["g"];
+  colourData.b = root["b"];
   int timespan = root["t"];
   int kelvin = root["k"];
-  float brightness = root["b"];
+  double brightness = root["b"];
 
   //compare to a known request
   if(command == ""){
@@ -70,11 +74,11 @@ void commandDecode(String rawCommand){
   } else if(command == "set_rgb")  {
      //straight set an RGB colour
      debug("Command: set_rgb");
-     set_rgb(r,g,b);
+     set_rgb(colourData);
   } else if(command =="fade_rgb") {
      //straight set an RGB colour
      debug("Command: fade_rgb");
-     fade_rgb(r,g,b,timespan);
+     fade_rgb(colourData,timespan);
   } else  if(command == "fade_kelvin"){
    //fade to a new colour temperature
      debug("Command: fade_kelvin");
@@ -205,9 +209,11 @@ void setup () {
    debug("local ip");
    debug(WiFi.localIP().toString());
    mqttSetup();
-   setup_rgb(R_PIN,G_PIN,B_PIN,1); //setup RGB LED strip
-   fade_rgb(0,255,0,500);
-   fade_rgb(0,0,0,500); //show were up and running
+   setupRGB(R_PIN,G_PIN,B_PIN,1); //setup RGB LED strip
+   rgb greenRGB = {0,255,0};
+   rgb offRGB = {0,0,0};
+   fade_rgb(greenRGB,500);
+   fade_rgb(offRGB,500); //show were up and running
 
    //server stuff
    if (MDNS.begin(mdnsName)) {
@@ -244,8 +250,9 @@ void reconnect(void) {
 void loop(){
   client.loop(); //update MQTT client
   server.handleClient(); //update server handling
+  rgbLoop();
   if (WiFi.status() == WL_CONNECTED)
-  {    
+  {
      if (!client.connected() && strlen(mqttBroker) != 0) //dont use MQTT if no broker set
      {
        reconnect();
