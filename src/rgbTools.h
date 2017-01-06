@@ -1,5 +1,5 @@
 #ifndef RGB_TOOLS
-  #define RGB_TOOLS // To make sure you don't declare the function more than once by including the header multiple times.
+  #define RGB_TOOLS
   #include <Arduino.h>
   #include "colours.h"
 

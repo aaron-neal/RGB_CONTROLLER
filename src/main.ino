@@ -1,12 +1,11 @@
 #include <FS.h>                   //this needs to be first, or it all crashes and burns...
-#include <Arduino.h>
 #include <ESP8266WiFi.h>      //ESP8266 WiFi driver
 #include <PubSubClient.h>     //MQTT Library
 #include <queue>
 #include <ArduinoJson.h>
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
-#include <WiFiManager.h>         //https://github.com/tzapu/WiFiManager
+#include <WiFiManager.h>
 #include <ESP8266mDNS.h>
 #include "webPage.h"
 #include "rgbTools.h"
@@ -99,10 +98,12 @@ void commandDecode(String rawCommand){
   } else if(command == "reset_settings") {
      //turn lights off
     debug("Command: reset_settings");
+    fadeRGBBlocking({100,0,0},100);
     WiFiManager wifiManager;
     SPIFFS.format();
     wifiManager.resetSettings();
     delay(3000);
+    fadeRGBBlocking({0,0,0},100);
     //reset and try again, or maybe put it to deep sleep
     ESP.reset();
     delay(5000);
@@ -140,19 +141,22 @@ void saveConfigCallback () {
   debug("Should save config");
   shouldSaveConfig = true;
 }
+void configModeCallback (WiFiManager *myWiFiManager) {
+  fadeRGBBlocking({100,0,0},500);
+}
 
 void setup () {
   // put your setup code here, to run once:
    Serial.begin(115200);
    debug("WiFi RGB Booting");
-
+   setupRGB(R_PIN,G_PIN,B_PIN,1); //setup RGB LED strip
    //WiFiManager
+
    WiFiManager wifiManager;
    //clean FS and settings, for testing
    //SPIFFS.format();
    //wifiManager.resetSettings();
 
-   //read configuration from FS json
    openConfig();
 
    WiFiManagerParameter custom_device_name("name", "device name", deviceName, 40);
@@ -160,12 +164,9 @@ void setup () {
    WiFiManagerParameter custom_mqtt_port("port", "mqtt port (optional)", mqttPort, 5);
    WiFiManagerParameter custom_mqtt_username("username", "mqtt username (optional)", mqttUsername, 40);
    WiFiManagerParameter custom_mqtt_password("password", "mqtt password (optional)", mqttPassword, 40);
-
-
-
    //set config save notify callback
    wifiManager.setSaveConfigCallback(saveConfigCallback);
-
+   wifiManager.setAPCallback(configModeCallback);
    //add all your parameters here
    wifiManager.addParameter(&custom_device_name);
    wifiManager.addParameter(&custom_mqtt_server);
@@ -173,16 +174,6 @@ void setup () {
    wifiManager.addParameter(&custom_mqtt_username);
    wifiManager.addParameter(&custom_mqtt_password);
 
-
-   //sets timeout until configuration portal gets turned off
-   //useful to make it all retry or go to sleep
-   //in seconds
-   //wifiManager.setTimeout(120);
-
-   //fetches ssid and pass and tries to connect
-   //if it does not connect it starts an access point with the specified name
-   //here  "AutoConnectAP"
-   //and goes into a blocking loop awaiting configuration
    if (!wifiManager.autoConnect("RGB_WiFi", "password")) {
      debug("failed to connect and hit timeout");
      delay(3000);
@@ -193,7 +184,7 @@ void setup () {
 
    //if you get here you have connected to the WiFi
    debug("WiFi connected");
-
+   fadeRGBBlocking({0,0,0},100);
    //read updated parameters
    strcpy(deviceName, custom_device_name.getValue());
    strcpy(mqttBroker, custom_mqtt_server.getValue());
@@ -207,10 +198,10 @@ void setup () {
      saveConfig();
    }
 
-   debug("local ip");
+   debug("IP Address:");
    debug(WiFi.localIP().toString());
    mqttSetup();
-   setupRGB(R_PIN,G_PIN,B_PIN,1); //setup RGB LED strip
+
 
    //server stuff
    if (MDNS.begin(mdnsName)) {
@@ -246,10 +237,8 @@ void reconnect(void) {
 
 void loop(){
   if(boot == 0){
-    rgb greenRGB = {0,255,0};
-    rgb offRGB = {0,0,0};
-    fadeRGBBlocking(greenRGB,500);
-    fadeRGBBlocking(offRGB,500); //show were up and running
+    fadeRGBBlocking({0,255,0},500); //glow green
+    fadeRGBBlocking({0,0,0},500); //show were up and running
     boot=1;
   }
 
