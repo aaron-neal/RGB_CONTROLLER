@@ -10,7 +10,7 @@
     <script>
 
       var off = '{"command":"off"}'
-      var reset = '{"command":"reset_settings"}'
+      var reset = '{"command":"resetSettings"}'
       function sendCommand(command) {
           var data = 'command=' + command;
           var request = new XMLHttpRequest();
@@ -29,7 +29,7 @@
         sendRGB(r,g,b);
       }
       function sendRGB(r,g,b){
-        var command = '{"command":"set_rgb","r":';
+        var command = '{"command":"setRGB","r":';
         command = command + r;
         command = command +',"g":' + g;
         command = command +',"b":' + b + '}';
@@ -40,7 +40,7 @@
       }
 
       function updateBrightness(b) {
-          var command = '{"command":"set_brightness","b":' + b + '}';
+          var command = '{"command":"setBrightness","brightness":' + b + '}';
           sendCommand(command);
       }
 

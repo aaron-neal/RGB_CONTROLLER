@@ -1,6 +1,6 @@
 #include "rgbTools.h"
 
-int REDPIN, GREENPIN, BLUEPIN;
+int redPin, greenPin, bluePin;
 
 /* maximum brightness for the LEDs
     0(off) --> 1(max brightness)  */
@@ -22,24 +22,23 @@ bool _fadingKelvin = false;
 int _currentKelvin = 0;
 double _kelvinFadeAmount;
 
-void setupRGB (int r_pin, int g_pin, int b_pin, double initialBrightness) {
-
-  REDPIN = r_pin;
-  GREENPIN = g_pin;
-  BLUEPIN = b_pin;
-  _brightness = initialBrightness;
+void setupRGB (int rPin, int gPin, int bPin) {
+  redPin = rPin;
+  greenPin = gPin;
+  bluePin = bPin;
 
   analogWriteRange(255); //use 0 --> 255 as pwm range
   analogWriteFreq(1000); //set PWM freq.
   delay(50);
-  analogWrite(REDPIN, 0);
-  analogWrite(GREENPIN, 0);
-  analogWrite(BLUEPIN, 0);
-
+  analogWrite(redPin, 0);
+  analogWrite(greenPin, 0);
+  analogWrite(bluePin, 0);
 }
+
 void fadeRGB(rgb fadeRGB, int timespan) {
   timespan = max(timespan,_iterationDelay);
   _fadingRGB = true;
+  _fadingKelvin = false;
   _fadeSteps = timespan/_iterationDelay;
   _rgbFadeAmounts[0] =  (_currentRGB.r - fadeRGB.r) / _fadeSteps;
   _rgbFadeAmounts[1] = (_currentRGB.g - fadeRGB.g) / _fadeSteps;
@@ -72,9 +71,9 @@ void rgbLoop()
     }
   }
   //always set colours
-  analogWrite(REDPIN, _currentRGB.r * _brightness);
-  analogWrite(GREENPIN, _currentRGB.g * _brightness);
-  analogWrite(BLUEPIN, _currentRGB.b * _brightness);
+  analogWrite(redPin, _currentRGB.r * _brightness);
+  analogWrite(greenPin, _currentRGB.g * _brightness);
+  analogWrite(bluePin, _currentRGB.b * _brightness);
 }
 
 void fadeKelvin(int toKelvin, int timespan)
@@ -84,6 +83,7 @@ void fadeKelvin(int toKelvin, int timespan)
   {
     //fade kelvin
     _fadingKelvin = true;
+    _fadingRGB = false;
     _fadeSteps = timespan/_iterationDelay; //number of iterations between moves (30ms delay
     _kelvinFadeAmount =  (_currentKelvin - toKelvin) / _fadeSteps;
   } else {
@@ -106,9 +106,9 @@ void fadeRGBBlocking(rgb fadeRGB, int timespan){
     _currentRGB.g = _currentRGB.g - gfadeAmount;
     _currentRGB.b = _currentRGB.b - bfadeAmount;
 
-    analogWrite(REDPIN, _currentRGB.r * _brightness);
-    analogWrite(GREENPIN, _currentRGB.g * _brightness);
-    analogWrite(BLUEPIN, _currentRGB.b * _brightness);
+    analogWrite(redPin, _currentRGB.r * _brightness);
+    analogWrite(greenPin, _currentRGB.g * _brightness);
+    analogWrite(bluePin, _currentRGB.b * _brightness);
 
     delay(_iterationDelay);
  }
@@ -137,9 +137,7 @@ void setBrightness(double brightness)
 
 void off()
 {
-  _currentRGB.r = 0;
-  _currentRGB.g = 0;
-  _currentRGB.b = 0;
+  setRGB({0,0,0});
 }
 
 void setKelvin(int kelvin)

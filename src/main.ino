@@ -11,7 +11,6 @@
 #include "rgbTools.h"
 
 
-
 WiFiClient wclient;//WiFi Object
 PubSubClient client(wclient);//MQTT Object
 ESP8266WebServer server(80);
@@ -21,136 +20,30 @@ ESP8266WebServer server(80);
 #define G_PIN 13
 #define B_PIN 14
 
-
+/* MQTT configuration*/
+std::queue <String> mqttCommandQueue;
 char mqttBroker[40] =  "";
 char mqttUsername[40] = "";
 char mqttPassword[40] = "";
 char mqttPort[6] = "";
-char deviceName[40] = "";
-
-char mdnsName[40] = "";
-
 char mqttID [10];
 char mqttCommandChannel [50];
 char mqttStatusChannel [50];
 char mqttDebugChannel [50];
 
+
+bool shouldSaveConfig = false; //flag for saving data
+
+char mdnsName[40] = "";
+char deviceName[40] = "";
+
 bool debugBool = true;
-int boot = 0;
-
-std::queue <String> mqttCommandQueue;
-
-int colour_temp = 1500;    // how bright the LED is
-int fadeAmount = 5;    // how many points to fade the LED by
-
-void debug(String debugMessage){
-  if(debugBool){
-    Serial.println(debugMessage);
-  }
-}
-
-void commandDecode(String rawCommand){
-  DynamicJsonBuffer jsonBuffer(100); //JSON buffer
-  JsonObject& root = jsonBuffer.parseObject(rawCommand);//extract JSON data
-  if (!root.success())
-  {
-    debug("JSON Error:");
-    debug(rawCommand);
-    return;
-  }
-  debug(rawCommand);
-  String command = root["command"];
-  rgb colourData;
-  colourData.r = root["r"];
-  colourData.g = root["g"];
-  colourData.b = root["b"];
-  int timespan = root["t"];
-  int kelvin = root["k"];
-  double brightness = root["b"];
-
-  //compare to a known request
-  if(command == ""){
-      debug("No command set!");
-  } else if(command == "set_rgb")  {
-     //straight set an RGB colour
-     debug("Command: set_rgb");
-     setRGB(colourData);
-  } else if(command =="fade_rgb") {
-     //straight set an RGB colour
-     debug("Command: fade_rgb");
-     fadeRGB(colourData,timespan);
-  } else  if(command == "fade_kelvin"){
-   //fade to a new colour temperature
-     debug("Command: fade_kelvin");
-     fadeKelvin(kelvin, timespan);
-  } else if(command =="set_kelvin"){
-   //fade to a new colour temperature
-     debug("Command: set_kelvin");
-     setKelvin(kelvin);
-  } else if(command == "set_brightness"){
-   //fade to a new colour temperature
-     debug("Command: set_brightness");
-     setBrightness(brightness);
-  } else if(command == "off"){
-     //turn lights off
-    debug("Command: lights_off");
-    off(); //make sure the lights start off!
-  } else if(command == "reset_settings") {
-     //turn lights off
-    debug("Command: reset_settings");
-    fadeRGBBlocking({100,0,0},100);
-    WiFiManager wifiManager;
-    SPIFFS.format();
-    wifiManager.resetSettings();
-    delay(3000);
-    fadeRGBBlocking({0,0,0},100);
-    //reset and try again, or maybe put it to deep sleep
-    ESP.reset();
-    delay(5000);
-  } else {
-    debug("That command is  not supported");
-  }
-}
-
-//Callback for MQTT data receive
-void mqttRecvCallback(char* topic, byte* payload, unsigned int length) {
-  char command[length];
-  memcpy(command,payload,length);
-  mqttCommandQueue.push(command);
-}
-
-void mqttSetup(){
-  client.setServer(mqttBroker, atoi(mqttPort));
-  client.setCallback(mqttRecvCallback);
-  sprintf(mqttID,"%d",ESP.getChipId());
-  sprintf(mdnsName,"RGB-%d",ESP.getChipId());
-  sprintf(mqttStatusChannel,"esp/rgblight/%d/status", ESP.getChipId());
-  sprintf(mqttCommandChannel,"esp/rgblight/%d/command", ESP.getChipId());
-  sprintf(mqttDebugChannel,"esp/rgblight/%d/debug", ESP.getChipId());
-  debug("MQTT Topics:");
-  debug(mqttStatusChannel);
-  debug(mqttCommandChannel);
-  debug(mqttDebugChannel);
-}
-
-//flag for saving data
-bool shouldSaveConfig = false;
-
-//callback notifying us of the need to save config
-void saveConfigCallback () {
-  debug("Should save config");
-  shouldSaveConfig = true;
-}
-void configModeCallback (WiFiManager *myWiFiManager) {
-  fadeRGBBlocking({100,0,0},500);
-}
+int boot = 0; //first boot check
 
 void setup () {
-  // put your setup code here, to run once:
    Serial.begin(115200);
    debug("WiFi RGB Booting");
-   setupRGB(R_PIN,G_PIN,B_PIN,1); //setup RGB LED strip
-   //WiFiManager
+   setupRGB(R_PIN,G_PIN,B_PIN); //setup RGB LED strip
 
    WiFiManager wifiManager;
    //clean FS and settings, for testing
@@ -159,20 +52,21 @@ void setup () {
 
    openConfig();
 
+   wifiManager.setDebugOutput(false);
    WiFiManagerParameter custom_device_name("name", "device name", deviceName, 40);
    WiFiManagerParameter custom_mqtt_server("server", "mqtt server (optional)", mqttBroker, 40);
    WiFiManagerParameter custom_mqtt_port("port", "mqtt port (optional)", mqttPort, 5);
    WiFiManagerParameter custom_mqtt_username("username", "mqtt username (optional)", mqttUsername, 40);
    WiFiManagerParameter custom_mqtt_password("password", "mqtt password (optional)", mqttPassword, 40);
-   //set config save notify callback
-   wifiManager.setSaveConfigCallback(saveConfigCallback);
-   wifiManager.setAPCallback(configModeCallback);
-   //add all your parameters here
    wifiManager.addParameter(&custom_device_name);
    wifiManager.addParameter(&custom_mqtt_server);
    wifiManager.addParameter(&custom_mqtt_port);
    wifiManager.addParameter(&custom_mqtt_username);
    wifiManager.addParameter(&custom_mqtt_password);
+
+   //set AP callbacks
+   wifiManager.setSaveConfigCallback(saveConfigCallback);
+   wifiManager.setAPCallback(configModeCallback);
 
    if (!wifiManager.autoConnect("RGB_WiFi", "password")) {
      debug("failed to connect and hit timeout");
@@ -192,7 +86,6 @@ void setup () {
    strcpy(mqttUsername, custom_mqtt_username.getValue());
    strcpy(mqttPassword, custom_mqtt_password.getValue());
 
-
    //save the custom parameters to FS
    if (shouldSaveConfig) {
      saveConfig();
@@ -200,8 +93,7 @@ void setup () {
 
    debug("IP Address:");
    debug(WiFi.localIP().toString());
-   mqttSetup();
-
+   mqttSetup(); //sets all the mqtt topics based on the chip-id
 
    //server stuff
    if (MDNS.begin(mdnsName)) {
@@ -217,26 +109,9 @@ void setup () {
    debug("HTTP server started");
 }
 
-void reconnect(void) {
-  int i = 0;
-  while (i<2 && !client.connected()) { // attempt 3 connections
-     debug("MQTT Connecting...");
-    // Attempt to connect, set LWT so that an offline status will be set when powered down
-    if (client.connect(mqttID, mqttUsername, mqttPassword,mqttStatusChannel,1,1,"offline")) {
-      debug("MQTT Connected");// Connected
-      client.subscribe(mqttCommandChannel); //subscribe to command topic
-      client.publish(mqttStatusChannel, "online",1); //let them know we're online
-    } else {
-      debug("MQTT Failed");
-      delay(100);// Wait before retrying
-    }
-    i++;
-  }
-}
-
-
 void loop(){
   if(boot == 0){
+    //perform a green glow to indicate we are connected to the network
     fadeRGBBlocking({0,255,0},500); //glow green
     fadeRGBBlocking({0,0,0},500); //show were up and running
     boot=1;
@@ -258,9 +133,124 @@ void loop(){
   }
 }
 
+/*-----------------Command Decoding-----------------*/
+void commandDecode(String rawCommand){
+  debug(rawCommand);
+  DynamicJsonBuffer jsonBuffer(100); //JSON buffer
+  JsonObject& root = jsonBuffer.parseObject(rawCommand);//extract JSON data
+
+  if (!root.success())
+  {
+    debug("JSON Error:");
+    return;
+  }
+
+  String command = root["command"];
+  rgb colourData;
+  colourData.r = root["r"];
+  colourData.g = root["g"];
+  colourData.b = root["b"];
+  int timespan = root["timespan"];
+  int kelvin = root["kelvin"];
+  double brightness = root["brightness"];
+
+  //compare to a known request
+  if(command == ""){
+      debug("No command set!");
+  } else if(command == "setRGB")  {
+     //straight set an RGB colour
+     debug("Command: setRGB");
+     setRGB(colourData);
+  } else if(command =="fadeRGB") {
+     //straight set an RGB colour
+     debug("Command: fadeRGB");
+     fadeRGB(colourData,timespan);
+  } else  if(command == "fadeKelvin"){
+   //fade to a new colour temperature
+     debug("Command: fade_kelvin");
+     fadeKelvin(kelvin, timespan);
+  } else if(command =="setKelvin"){
+   //fade to a new colour temperature
+     debug("Command: set_kelvin");
+     setKelvin(kelvin);
+  } else if(command == "setBrightness"){
+   //fade to a new colour temperature
+     debug("Command: setBrightness");
+     setBrightness(brightness);
+  } else if(command == "off"){
+     //turn lights off
+    debug("Command: Off");
+    off(); //make sure the lights start off!
+  } else if(command == "resetSettings") {
+     //turn lights off
+    debug("Command: resetSettings");
+    fadeRGBBlocking({100,0,0},100);
+    WiFiManager wifiManager;
+    SPIFFS.format();
+    wifiManager.resetSettings();
+    delay(3000);
+    fadeRGBBlocking({0,0,0},100);
+    ESP.reset();
+    delay(5000);
+  } else {
+    debug("That command is not supported!");
+  }
+}
+
+/*-----------------WifiManager Callbacks-----------------*/
+//callback notifying us of the need to save config
+void saveConfigCallback () {
+  debug("Should save config");
+  shouldSaveConfig = true;
+}
+//calback notifying of config mode
+void configModeCallback (WiFiManager *myWiFiManager) {
+  fadeRGBBlocking({100,0,0},500);
+}
+/*-----------------MQTT Functions-----------------*/
+void mqttRecvCallback(char* topic, byte* payload, unsigned int length) {
+  char command[length];
+  memcpy(command,payload,length);
+  mqttCommandQueue.push(command);
+}
+
+void mqttSetup(){
+  client.setServer(mqttBroker, atoi(mqttPort));
+  client.setCallback(mqttRecvCallback);
+  sprintf(mqttID,"%d",ESP.getChipId());
+  sprintf(mdnsName,"RGB-%d",ESP.getChipId());
+  sprintf(mqttStatusChannel,"esp/rgblight/%d/status", ESP.getChipId());
+  sprintf(mqttCommandChannel,"esp/rgblight/%d/command", ESP.getChipId());
+  sprintf(mqttDebugChannel,"esp/rgblight/%d/debug", ESP.getChipId());
+  debug("MQTT Topics:");
+  debug(mqttStatusChannel);
+  debug(mqttCommandChannel);
+  debug(mqttDebugChannel);
+}
+
+void reconnect(void) {
+  int i = 0;
+  while (i<2 && !client.connected()) { // attempt 3 connections
+     debug("MQTT Connecting...");
+    // Attempt to connect, set LWT so that an offline status will be set when powered down
+    if (client.connect(mqttID, mqttUsername, mqttPassword,mqttStatusChannel,1,1,"offline")) {
+      debug("MQTT Connected");// Connected
+      client.subscribe(mqttCommandChannel); //subscribe to command topic
+      client.publish(mqttStatusChannel, "online",1); //let them know we're online
+    } else {
+      debug("MQTT Failed");
+      delay(100);// Wait before retrying
+    }
+    i++;
+  }
+}
+
+
+
+
+/*-----------------Configuration load / save-----------------*/
 void openConfig(){
   debug("mounting FS...");
-
   if (SPIFFS.begin()) {
     debug("mounted file system");
     if (SPIFFS.exists("/config.json")) {
@@ -314,6 +304,7 @@ void saveConfig(){
   configFile.close();
 }
 
+/*-----------------Web server Handlers-----------------*/
 void handleRoot() {
   debug("Handling Root");
   String webPage = RGB_SELECTOR_PAGE;
@@ -344,4 +335,11 @@ void handleNotFound(){
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   server.send(404, "text/plain", message);
+}
+
+/*-----------------Debug Handler-----------------*/
+void debug(String debugMessage){
+  if(debugBool){
+    Serial.println(debugMessage);
+  }
 }

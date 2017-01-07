@@ -3,8 +3,8 @@
   #include <Arduino.h>
   #include "colours.h"
 
-  void setupRGB (int r_pin, int g_pin, int b_pin, double initialBrightness);
-  void fadeKelvin(int to_kelvin, int timespan);
+  void setupRGB (int rPin, int gPin, int bPin);
+  void fadeKelvin(int toKelvin, int timespan);
   void setRGB(rgb setRGB);
   void setBrightness(double brightness);
   void setKelvin(int kelvin);
