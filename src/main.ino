@@ -30,7 +30,7 @@ char mqttID [10];
 char mqttCommandChannel [50];
 char mqttStatusChannel [50];
 char mqttDebugChannel [50];
-
+char bootCommand [100];
 
 bool shouldSaveConfig = false; //flag for saving data
 
@@ -114,6 +114,10 @@ void loop(){
     //perform a green glow to indicate we are connected to the network
     fadeRGBBlocking({0,255,0},500); //glow green
     fadeRGBBlocking({0,0,0},500); //show were up and running
+    delay(500);
+    if(strlen(bootCommand) != 0){
+      mqttCommandQueue.push(bootCommand);
+    }
     boot=1;
   }
 
@@ -141,7 +145,7 @@ void commandDecode(String rawCommand){
 
   if (!root.success())
   {
-    debug("JSON Error:");
+    debug("JSON Error");
     return;
   }
 
@@ -180,16 +184,30 @@ void commandDecode(String rawCommand){
   } else if(command == "off"){
      //turn lights off
     debug("Command: Off");
-    off(); //make sure the lights start off!
+    off();
   } else if(command == "resetSettings") {
-     //turn lights off
     debug("Command: resetSettings");
-    fadeRGBBlocking({100,0,0},100);
-    WiFiManager wifiManager;
-    SPIFFS.format();
-    wifiManager.resetSettings();
-    delay(3000);
-    fadeRGBBlocking({0,0,0},100);
+    factoryReset();
+  } else if(command == "setBootColour") {
+
+    debug("Command: setBootColour");
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& json = jsonBuffer.createObject();
+    json["command"] = "fadeRGB";
+    json["r"] = colourData.r;
+    json["g"] = colourData.g;
+    json["b"] = colourData.b;
+    json["timespan"] = 500;
+    json.printTo(Serial);
+    json.printTo(bootCommand, sizeof(bootCommand));
+    saveConfig();
+  } else if(command == "clearBootColour") {
+     //turn lights off
+    debug("Command: clearBootColour");
+    String x = "";
+    x.toCharArray(bootCommand,sizeof(bootCommand));
+    saveConfig();
+  } else if(command == "restart") {
     ESP.reset();
     delay(5000);
   } else {
@@ -245,9 +263,6 @@ void reconnect(void) {
   }
 }
 
-
-
-
 /*-----------------Configuration load / save-----------------*/
 void openConfig(){
   debug("mounting FS...");
@@ -269,13 +284,40 @@ void openConfig(){
         json.printTo(Serial);
         if (json.success()) {
           debug("\nparsed json");
-          strcpy(deviceName, json["device_name"]);
-          strcpy(mqttBroker, json["mqtt_server"]);
-          strcpy(mqttPort, json["mqtt_port"]);
-          strcpy(mqttUsername, json["mqtt_username"]);
-          strcpy(mqttPassword, json["mqtt_password"]);
+          bool jsonComplete = true;
+          if (json.containsKey("device_name"))
+          {
+              strcpy(deviceName, json["device_name"]);
+          } else { jsonComplete = false;}
+          if (json.containsKey("mqtt_server"))
+          {
+              strcpy(mqttBroker, json["mqtt_server"]);
+          } else { jsonComplete = false;}
+          if (json.containsKey("mqtt_port"))
+          {
+              strcpy(mqttPort, json["mqtt_port"]);
+          } else { jsonComplete = false;}
+          if (json.containsKey("mqtt_username"))
+          {
+              strcpy(mqttUsername, json["mqtt_username"]);
+          } else { jsonComplete = false;}
+          if (json.containsKey("mqtt_password"))
+          {
+            strcpy(mqttPassword, json["mqtt_password"]);
+          } else { jsonComplete = false;}
+          if (json.containsKey("boot_command"))
+          {
+              strcpy(bootCommand, json["boot_command"]);
+          } else { jsonComplete = false;}
+
+          if(!jsonComplete){
+            //the json is not complete, so factory reset
+            factoryReset();
+          }
+
         } else {
           debug("failed to load json config");
+          factoryReset();
         }
       }
     }
@@ -293,15 +335,28 @@ void saveConfig(){
   json["mqtt_port"] = mqttPort;
   json["mqtt_username"] = mqttUsername;
   json["mqtt_password"] = mqttPassword;
+  json["boot_command"] = bootCommand;
 
   File configFile = SPIFFS.open("/config.json", "w");
   if (!configFile) {
     debug("failed to open config file for writing");
+    factoryReset();
   }
 
   json.printTo(Serial);
   json.printTo(configFile);
   configFile.close();
+}
+
+void factoryReset(){
+  fadeRGBBlocking({100,0,0},100);
+  WiFiManager wifiManager;
+  SPIFFS.format();
+  wifiManager.resetSettings();
+  delay(3000);
+  fadeRGBBlocking({0,0,0},100);
+  ESP.reset();
+  delay(5000);
 }
 
 /*-----------------Web server Handlers-----------------*/

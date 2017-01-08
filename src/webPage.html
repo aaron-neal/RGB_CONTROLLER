@@ -12,6 +12,7 @@
       var off = '{"command":"off"}'
       var reset = '{"command":"resetSettings"}'
       function sendCommand(command) {
+					alert(command);
           var data = 'command=' + command;
           var request = new XMLHttpRequest();
           request.open('POST', '/', true);
@@ -38,11 +39,26 @@
         document.getElementById("g").value = g;
         document.getElementById("b").value = b;
       }
+			function setBootColour(){
+					var jscolor = document.getElementById("jsbootColour");
+					var command = '{"command":"setBootColour","r":';
+	        command = command + Math.round(jscolor.jscolor.rgb[0]);
+	        command = command +',"g":' + Math.round(jscolor.jscolor.rgb[1]);
+	        command = command +',"b":' + Math.round(jscolor.jscolor.rgb[2]) + '}';
+	        sendCommand(command);
+			}
+			function clearBootColour(){
+				sendCommand('{"command":"clearBootColour"}');
+			}
 
       function updateBrightness(b) {
           var command = '{"command":"setBrightness","brightness":' + b + '}';
           sendCommand(command);
       }
+
+			function restartDevice(){
+				sendCommand('{"command":"restart"}');
+			}
 
       function resetSettings(){
         var r = confirm("Are you sure you want to reset all the settings?");
@@ -90,7 +106,15 @@
       <br><br>
       <button class="cl" style="width:50%" onclick="sendCommand(off)">Turn Off</button>
       <br><br>
-      <button class="cl" style="width:50%" onclick="resetSettings()">Reset Settings</button>
+			<h3>Set Boot Colour</h3>
+			<input class='jscolor' id="jsbootColour" value='FFFEFD'>
+			<button class="cl" onclick="setBootColour()">Apply</button>
+			<button class="cl" onclick="clearBootColour()">Clear</button>
+
+			<br><br>
+			<h3>Device</h3>
+			<button class="cl" style="width:40%" onclick="restartDevice()">Restart</button>
+			<button class="cl" style="width:40%" onclick="resetSettings()">Reset Settings</button>
     </div>
 	</body>
 </html>
