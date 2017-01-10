@@ -39,6 +39,12 @@
         document.getElementById("g").value = g;
         document.getElementById("b").value = b;
       }
+			function sendKelvin(k){
+        var command = '{"command":"setKelvin","kelvin":';
+        command = command + k + '}';
+        sendCommand(command);
+      }
+
 			function setBootColour(){
 					var jscolor = document.getElementById("jsbootColour");
 					var command = '{"command":"setBootColour","r":';
@@ -101,6 +107,11 @@
           <label>B:</label>
           <input type="range" id="b" value="0" name="b" min="0" max="255" style="width: 70%" onchange="updateSliders();">
       </sliderss>
+			<h3>Kelvin Scale</h3>
+			<label>800</label>
+			<input type="range" id="r" value="0" name="r" min="800" max="7000" style="width: 70%" onchange="sendKelvin(this.value);">
+			<label>7000</label>
+			<br>
       <h3>Brightness</h3>
       <input type="range" min="0" max="100" value="100" onchange="updateBrightness(this.value/100);" >
       <br><br>
