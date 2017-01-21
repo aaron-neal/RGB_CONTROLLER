@@ -214,6 +214,10 @@ void commandDecode(String rawCommand){
   } else if(command == "restart") {
     ESP.reset();
     delay(5000);
+  } else if(command == "startRandomColours") {
+    startRandom(timespan);
+  } else if(command == "stopRandomColours") {
+    stopRandom();
   } else {
     debug("That command is not supported!");
   }

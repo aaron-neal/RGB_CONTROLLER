@@ -22,6 +22,12 @@ bool _fadingKelvin = false;
 int _currentKelvin = 0;
 double _kelvinFadeAmount;
 
+/* Random Colours*/
+bool _randomColours = false;
+byte _color[3];
+byte _count, _a0, _a1, _a2;
+int _randomTimespan;
+
 void setupRGB (int rPin, int gPin, int bPin) {
   redPin = rPin;
   greenPin = gPin;
@@ -37,8 +43,8 @@ void setupRGB (int rPin, int gPin, int bPin) {
 
 void fadeRGB(rgb fadeRGB, int timespan) {
   timespan = max(timespan,_iterationDelay);
-  _fadingRGB = true;
   _fadingKelvin = false;
+  _fadingRGB = true;
   _fadeSteps = timespan/_iterationDelay;
   _rgbFadeAmounts[0] =  (_currentRGB.r - fadeRGB.r) / _fadeSteps;
   _rgbFadeAmounts[1] = (_currentRGB.g - fadeRGB.g) / _fadeSteps;
@@ -66,6 +72,9 @@ void rgbLoop()
       } else {
         _fadingRGB = false;
         _fadingKelvin = false;
+        if(_randomColours){
+          fadeRGB(randomColour(),_randomTimespan);
+        }
       }
       _lastUpdate = current_millis;
     }
@@ -82,8 +91,9 @@ void fadeKelvin(int toKelvin, int timespan)
   if(_currentKelvin != 0)
   {
     //fade kelvin
-    _fadingKelvin = true;
     _fadingRGB = false;
+    _randomColours = false;
+    _fadingKelvin = true;
     _fadeSteps = timespan/_iterationDelay; //number of iterations between moves (30ms delay
     _kelvinFadeAmount =  (_currentKelvin - toKelvin) / _fadeSteps;
   } else {
@@ -114,14 +124,38 @@ void fadeRGBBlocking(rgb fadeRGB, int timespan){
  }
  _currentRGB = fadeRGB;
 }
+void startRandom(int timespan){
+  _fadingRGB = false;
+  _fadingKelvin = false;
+  _randomColours = true;
+  _randomTimespan = timespan;
+  fadeRGB(randomColour(),_randomTimespan);
+}
+
+void stopRandom(){
+  _randomColours = false;
+}
+
+rgb randomColour(){
+  rgb randomRGB;
+  _color[_count]=random(256);
+  _a0=_count+random(1)+1;
+  _color[_a0%3]=random(256-_color[_count]);
+  _color[(_a0+1)%3]=255-_color[_a0%3]-_color[_count];
+  randomRGB.r = _color[0];
+  randomRGB.g = _color[1];
+  randomRGB.b = _color[2];
+  _count+=random(15); // to avoid repeating patterns
+  _count%=3;
+  return randomRGB;
+}
 
 void setRGB(rgb setRGB)
 {
    //will reset kelvin value as well, so that proper fading can occur
    _fadingRGB = false;
    _fadingKelvin = false;
-   _currentKelvin = 0;
-
+   _randomColours = false;
    setRGB.r = constrain(setRGB.r, 0, 255);
    setRGB.g = constrain(setRGB.g, 0, 255);
    setRGB.b = constrain(setRGB.b, 0, 255);

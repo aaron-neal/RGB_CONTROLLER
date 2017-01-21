@@ -11,5 +11,8 @@
   void rgbLoop ();
   void fadeRGB(rgb fadeRGB, int timespan);
   void fadeRGBBlocking(rgb fadeRGB, int timespan);
+  void startRandom(int timespan);
+  void stopRandom();
+  rgb randomColour();
   void off();
 #endif
