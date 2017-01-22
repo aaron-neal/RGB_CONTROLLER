@@ -1,4 +1,5 @@
-/*minified with https://kangax.github.io/html-minifier/*/
+<!view-source:https://24ways.org/examples/centered-tabs-with-css/final.html>
+<!http://www.w3schools.com/howto/howto_js_tabs.asp>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -70,6 +71,27 @@
         var r = confirm("Are you sure you want to reset all the settings?");
         if (r == true) {sendCommand(reset);}
       }
+			function openTab(evt, tabName) {
+			    // Declare all variables
+			    var i, tabcontent, tablinks;
+
+			    // Get all elements with class="tabcontent" and hide them
+			    tabcontent = document.getElementsByClassName("tabcontent");
+			    for (i = 0; i < tabcontent.length; i++) {
+			        tabcontent[i].style.display = "none";
+			    }
+
+			    // Get all elements with class="tablinks" and remove the class "active"
+			    tablinks = document.getElementsByClassName("tablinks");
+			    for (i = 0; i < tablinks.length; i++) {
+			        tablinks[i].className = tablinks[i].className.replace(" active", "");
+			    }
+
+			    // Show the current tab, and add an "active" class to the link that opened the tab
+			    document.getElementById(tabName).style.display = "block";
+			    evt.currentTarget.className += " active";
+			}
+
     </script>
 
 		<style>
@@ -84,48 +106,107 @@
 		button:hover {opacity: 0.75;}
 		.cl{display: inline-block;  float: center;  width:20%;}
 		sliderss > * {  vertical-align: middle; display: inline-block;}
+		/* Style the list */
+
+
+			#tabs ul, #tabs ul li {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+				border: 1px solid #ccc;
+    		background-color: #f1f1f1;
+			}
+
+			#tabs ul {
+				padding: 5px 0 4px;
+				text-align: center;
+			}
+
+			#tabs ul li a:hover {background-color: #ddd;}
+
+			#tabs ul li {
+				display: inline;
+				margin-right: .75em;
+			}
+
+			#tabs ul li.last {
+				margin-right: 0;
+			}
+
+			#tabs ul li a {
+				color: #06C;
+				padding: 5px 0;
+				text-decoration: none;
+			}
+
+			#tabs ul li a span {
+				padding: 5px 1em;
+			}
+			/* Style the tab content */
+			.tabcontent {
+			    display: none;
+			    padding: 6px 12px;
+			    border: 1px solid #ccc;
+			    border-top: none;
+			}
+
+
+
+
 		</style>
 	</head>
 	<body>
 		<div style="text-align:center;display:inline-block;min-width:250px;">
       <h2>WiFi RGB Controller - {{}}</h2>
-      <h3>Colour Select</h3>
-      <input class='jscolor' onchange='update(this.jscolor)' value='FFFEFD'>
-      <br><br>
-      <button class="cl" style="background-color:red" onclick="sendRGB(255,0,0)">Red</button>
-      <button class="cl" style="background-color:green" onclick="sendRGB(0,255,0)">Green</button>
-      <button class="cl" style="background-color:blue" onclick="sendRGB(0,0,255)">Blue</button>
-      <button class="cl" style="color:black; background-color:white" onclick="sendRGB(255,255,255)">White</button>
-      <br><br>
-      <sliderss>
-          <label>R:</label>
-          <input type="range" id="r" value="0" name="r" min="0" max="255" style="width: 70%" onchange="updateSliders();">
-          <br>
-          <label>G:</label>
-          <input type="range" id="g"value="0" name="g" min="0" max="255" style="width: 70%" onchange="updateSliders();">
-          <br>
-          <label>B:</label>
-          <input type="range" id="b" value="0" name="b" min="0" max="255" style="width: 70%" onchange="updateSliders();">
-      </sliderss>
-			<h3>Kelvin Scale</h3>
-			<label>800</label>
-			<input type="range" id="r" value="0" name="r" min="800" max="7000" style="width: 70%" onchange="sendKelvin(this.value);">
-			<label>7000</label>
-			<br>
-      <h3>Brightness</h3>
-      <input type="range" min="0" max="100" value="100" onchange="updateBrightness(this.value/100);" >
-      <br><br>
-      <button class="cl" style="width:50%" onclick="sendCommand(off)">Turn Off</button>
-      <br><br>
-			<h3>Set Boot Colour</h3>
-			<input class='jscolor' id="jsbootColour" value='FFFEFD'>
-			<button class="cl" onclick="setBootColour()">Apply</button>
-			<button class="cl" onclick="clearBootColour()">Clear</button>
-
-			<br><br>
-			<h3>Device</h3>
-			<button class="cl" style="width:40%" onclick="restartDevice()">Restart</button>
-			<button class="cl" style="width:40%" onclick="resetSettings()">Reset Settings</button>
-    </div>
+			<div id="tabs">
+			<ul>
+			  <li><span><a href="javascript:void(0)" class="tablinks" id="colours" onclick="openTab(event, 'Colours')">Colours</span></a></li>
+			  <li class = "last" ><span><a href="javascript:void(0)" class="tablinks" id="settings" onclick="openTab(event, 'Settings')">Device Settings</span></a></li>
+			</ul>
+		</div>
+			<div id="Colours" class="tabcontent">
+	      <h3>Colour Select</h3>
+	      <input class='jscolor' onchange='update(this.jscolor)' value='FFFEFD'>
+	      <br><br>
+	      <button class="cl" style="background-color:red" onclick="sendRGB(255,0,0)">Red</button>
+	      <button class="cl" style="background-color:green" onclick="sendRGB(0,255,0)">Green</button>
+	      <button class="cl" style="background-color:blue" onclick="sendRGB(0,0,255)">Blue</button>
+	      <button class="cl" style="color:black; background-color:white" onclick="sendRGB(255,255,255)">White</button>
+	      <br><br>
+	      <sliderss>
+	          <label>R:</label>
+	          <input type="range" id="r" value="0" name="r" min="0" max="255" style="width: 70%" onchange="updateSliders();">
+	          <br>
+	          <label>G:</label>
+	          <input type="range" id="g"value="0" name="g" min="0" max="255" style="width: 70%" onchange="updateSliders();">
+	          <br>
+	          <label>B:</label>
+	          <input type="range" id="b" value="0" name="b" min="0" max="255" style="width: 70%" onchange="updateSliders();">
+	      </sliderss>
+				<h3>Kelvin Scale</h3>
+				<label>800</label>
+				<input type="range" id="r" value="0" name="r" min="800" max="7000" style="width: 70%" onchange="sendKelvin(this.value);">
+				<label>7000</label>
+				<br>
+	      <h3>Brightness</h3>
+	      <input type="range" min="0" max="100" value="100" onchange="updateBrightness(this.value/100);" >
+	      <br><br>
+	      <button class="cl" style="width:50%" onclick="sendCommand(off)">Turn Off</button>
+	      <br><br>
+				<h3>Set Boot Colour</h3>
+				<input class='jscolor' id="jsbootColour" value='FFFEFD'>
+				<button class="cl" onclick="setBootColour()">Apply</button>
+				<button class="cl" onclick="clearBootColour()">Clear</button>
+			</div>
+			<div id="Settings" class="tabcontent">
+				<br><br>
+				<h3>Device</h3>
+				<button class="cl" style="width:40%" onclick="restartDevice()">Restart</button>
+				<button class="cl" style="width:40%" onclick="resetSettings()">Reset Settings</button>
+			</div>
+		</div>
+		<script>
+			document.getElementById("colours").click();
+		</script>
 	</body>
 </html>
