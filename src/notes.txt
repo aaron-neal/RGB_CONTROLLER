@@ -1,0 +1,1 @@
+RGBW Thoughts -> http://stackoverflow.com/questions/21117842/converting-an-rgbw-color-to-a-standard-rgb-hsb-rappresentation
