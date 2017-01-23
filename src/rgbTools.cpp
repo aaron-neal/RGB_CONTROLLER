@@ -1,6 +1,6 @@
 #include "rgbTools.h"
 
-int redPin, greenPin, bluePin;
+int redPin, greenPin, bluePin, whitePin;
 
 /* maximum brightness for the LEDs
     0(off) --> 1(max brightness)  */
@@ -28,10 +28,11 @@ byte _color[3];
 byte _count, _a0, _a1, _a2;
 int _randomTimespan;
 
-void setupRGB (int rPin, int gPin, int bPin) {
+void setupRGB (int rPin, int gPin, int bPin, int wPin) {
   redPin = rPin;
   greenPin = gPin;
   bluePin = bPin;
+  whitePin = wPin;
 
   analogWriteRange(255); //use 0 --> 255 as pwm range
   analogWriteFreq(1000); //set PWM freq.
@@ -39,6 +40,7 @@ void setupRGB (int rPin, int gPin, int bPin) {
   analogWrite(redPin, 0);
   analogWrite(greenPin, 0);
   analogWrite(bluePin, 0);
+  analogWrite(whitePin, 0);
 }
 
 void fadeRGB(rgb fadeRGB, int timespan) {
