@@ -1,6 +1,4 @@
-<!view-source:https://24ways.org/examples/centered-tabs-with-css/final.html>
-<!http://www.w3schools.com/howto/howto_js_tabs.asp>
-
+<!https://kangax.github.io/html-minifier/>
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -108,47 +106,65 @@
 		sliderss > * {  vertical-align: middle; display: inline-block;}
 		/* Style the list */
 
+		#tabs ul
+		{
+			margin:0;
+			padding:0;
+			list-style-type:none;
+			width:auto;
+			position:relative;
+			display:block;
+			height:40px;
+			font-size:20px;
+			border-bottom:1px solid #000000;
+			border-top:1px solid #000000;
+			text-align: center;
+		}
 
-			#tabs ul, #tabs ul li {
-				list-style: none;
-				margin: 0;
-				padding: 0;
-				border: 1px solid #ccc;
-    		background-color: #f1f1f1;
-			}
+		#tabs li
+		{
+			display: inline-block;
+			margin-left: 20px;
+			padding:0;
+			margin-right: 20px;
+		}
 
-			#tabs ul {
-				padding: 5px 0 4px;
-				text-align: center;
-			}
+		#tabs li a
+		{
+			display:block;
+			float:left;
+			color:#999999;
+			height:32px;
+			text-decoration:none;
+			padding:8px 20px 0 20px;
+		}
 
-			#tabs ul li a:hover {background-color: #ddd;}
+		#tabs li a:hover
+		{
+			color:#FFFFFF;
+			height:32px;
+		}
 
-			#tabs ul li {
-				display: inline;
-				margin-right: .75em;
-			}
+		#tabs li.active a
+		{
+			display:inline;			float:left;
+			margin:0;
+		}
 
-			#tabs ul li.last {
-				margin-right: 0;
-			}
+		#tabs li a:hover {
+		    background-color: #ddd;
+		}
 
-			#tabs ul li a {
-				color: #06C;
-				padding: 5px 0;
-				text-decoration: none;
-			}
+		#tabs li a:focus, .active {
+		    background-color: #ccc;
+		}
 
-			#tabs ul li a span {
-				padding: 5px 1em;
-			}
-			/* Style the tab content */
-			.tabcontent {
-			    display: none;
-			    padding: 6px 12px;
-			    border: 1px solid #ccc;
-			    border-top: none;
-			}
+		.tabcontent {
+		    display: none;
+		    padding: 6px 12px;
+		    border: 1px solid #ccc;
+		    border-top: none;
+		}
 
 
 
@@ -160,8 +176,8 @@
       <h2>WiFi RGB Controller - {{}}</h2>
 			<div id="tabs">
 			<ul>
-			  <li><span><a href="javascript:void(0)" class="tablinks" id="colours" onclick="openTab(event, 'Colours')">Colours</span></a></li>
-			  <li class = "last" ><span><a href="javascript:void(0)" class="tablinks" id="settings" onclick="openTab(event, 'Settings')">Device Settings</span></a></li>
+			  <li><a href="javascript:void(0)" class="tablinks" id="colours" onclick="openTab(event, 'Colours')">Colours</a></li>
+			  <li class = "last" ><a href="javascript:void(0)" class="tablinks" id="settings" onclick="openTab(event, 'Settings')">Device Settings</a></li>
 			</ul>
 		</div>
 			<div id="Colours" class="tabcontent">
@@ -199,10 +215,9 @@
 				<button class="cl" onclick="clearBootColour()">Clear</button>
 			</div>
 			<div id="Settings" class="tabcontent">
-				<br><br>
-				<h3>Device</h3>
-				<button class="cl" style="width:40%" onclick="restartDevice()">Restart</button>
-				<button class="cl" style="width:40%" onclick="resetSettings()">Reset Settings</button>
+				<button style="width:40%" onclick="restartDevice()">Restart</button>
+				<br/><br/>
+				<button style="width:50%" onclick="resetSettings()">Reset Settings</button>
 			</div>
 		</div>
 		<script>
