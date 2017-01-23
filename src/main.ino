@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <FS.h>                   //this needs to be first, or it all crashes and burns...
 #include <ESP8266WiFi.h>      //ESP8266 WiFi driver
 #include <PubSubClient.h>     //MQTT Library
