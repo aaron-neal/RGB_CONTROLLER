@@ -16,10 +16,19 @@ WiFiClient wclient;//WiFi Object
 PubSubClient client(wclient);//MQTT Object
 ESP8266WebServer server(80);
 
+#define RGBW //Undef this if non RGBW version of board
+
 /* PIN DEFINES */
-#define R_PIN 12
-#define G_PIN 13
-#define B_PIN 14
+#ifdef RGBW
+  #define R_PIN 13
+  #define G_PIN 12
+  #define B_PIN 14
+  #define W_PIN 15
+#else
+  #define R_PIN 12
+  #define G_PIN 13
+  #define B_PIN 14
+#endif
 
 #define mqttRetries 3
 
@@ -47,8 +56,8 @@ int boot = 0; //first boot check
 
 void setup () {
    Serial.begin(115200);
-   debug("WiFi RGB Booting");
-   setupRGB(R_PIN,G_PIN,B_PIN); //setup RGB LED strip
+   debug("WiFi RGBW Booting");
+   setupRGB(R_PIN,G_PIN,B_PIN,W_PIN); //setup RGB LED strip
 
    WiFiManager wifiManager;
    //clean FS and settings, for testing

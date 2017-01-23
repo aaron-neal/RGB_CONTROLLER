@@ -85,6 +85,11 @@ void rgbLoop()
   analogWrite(redPin, _currentRGB.r * _brightness);
   analogWrite(greenPin, _currentRGB.g * _brightness);
   analogWrite(bluePin, _currentRGB.b * _brightness);
+  double minguess;
+  minguess = min(_currentRGB.r,_currentRGB.g);  // biggest of A and B
+  minguess = min(minguess, _currentRGB.b);  // but maybe C is bigger?
+  _currentRGB.w = minguess;
+  analogWrite(whitePin, _currentRGB.w * _brightness);
 }
 
 void fadeKelvin(int toKelvin, int timespan)

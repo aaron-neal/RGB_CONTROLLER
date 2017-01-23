@@ -2,9 +2,10 @@
   #define COLOURS
   #include <math.h>
   struct rgb {
-      double r;       // percent
-      double g;       // percent
-      double b;       // percent
+      double r;
+      double g;
+      double b;
+      double w;
   };
 
   struct hsv {
