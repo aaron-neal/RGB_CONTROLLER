@@ -11,7 +11,7 @@
       var off = '{"command":"off"}'
       var reset = '{"command":"resetSettings"}'
       function sendCommand(command) {
-					//alert(command);
+					alert(command);
           var data = 'command=' + command;
           var request = new XMLHttpRequest();
           request.open('POST', '/', true);
@@ -64,6 +64,21 @@
 			function restartDevice(){
 				sendCommand('{"command":"restart"}');
 			}
+			function randomFade(){
+				timespan = document.getElementById("t").value;
+				sendCommand('{"command":"startRandomColours","timespan":' + timespan + '}');
+			}
+			function rainbow(){
+				timespan = document.getElementById("t").value;
+				sendCommand('{"command":"startRainbow","timespan":' + timespan + '}');
+			}
+			function flash(){
+				timespan = document.getElementById("t").value;
+				sendCommand('{"command":"startFlash","timespan":' + timespan + '}');
+			}
+			function stopAll(){
+				sendCommand('{"command":"off"}');
+			}
 
       function resetSettings(){
         var r = confirm("Are you sure you want to reset all the settings?");
@@ -98,24 +113,23 @@
 		input{width:95%;}
 		body{text-align: center; font-family:verdana;}
 		button{border:0;  border-radius:0.3rem;    background-color:#1fa3ec;  color:#fff;
-			width:20%;   line-height:2.4rem;     font-size:1.2rem;    cursor: pointer;    margin: 4px 2px;
+			width:20%;   line-height:2rem;     font-size:1rem;    cursor: pointer;    margin: 4px 2px;
 			box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);}
 		.q{float: right; width: 64px; text-align: right;}
 		button:hover {opacity: 0.75;}
 		.cl{display: inline-block;  float: center;  width:20%;}
 		sliderss > * {  vertical-align: middle; display: inline-block;}
 		/* Style the list */
-
 		#tabs ul
 		{
 			margin:0;
 			padding:0;
 			list-style-type:none;
-			width:auto;
 			position:relative;
 			display:block;
 			height:40px;
-			font-size:20px;
+			font-size:15px;
+			font-weight: bold;
 			border-bottom:1px solid #000000;
 			border-top:1px solid #000000;
 			text-align: center;
@@ -124,35 +138,28 @@
 		#tabs li
 		{
 			display: inline-block;
-			margin-left: 20px;
+			margin-left: 5px;
 			padding:0;
-			margin-right: 20px;
+			margin-right: 5px;
 		}
 
 		#tabs li a
 		{
 			display:block;
 			float:left;
-			color:#999999;
+			color:#000000;
 			height:32px;
 			text-decoration:none;
-			padding:8px 20px 0 20px;
+			padding:8px 10px 0px 10px;
+			border-left:1px solid #000000;
+			border-right:1px solid #000000;
 		}
 
 		#tabs li a:hover
 		{
 			color:#FFFFFF;
 			height:32px;
-		}
-
-		#tabs li.active a
-		{
-			display:inline;			float:left;
-			margin:0;
-		}
-
-		#tabs li a:hover {
-		    background-color: #ddd;
+			background-color: #ddd;
 		}
 
 		#tabs li a:focus, .active {
@@ -164,6 +171,7 @@
 		    padding: 6px 12px;
 		    border: 1px solid #ccc;
 		    border-top: none;
+				width:320px
 		}
 
 
@@ -173,15 +181,16 @@
 	</head>
 	<body>
 		<div style="text-align:center;display:inline-block;min-width:250px;">
-      <h2>WiFi RGB Controller - {{}}</h2>
+      <h3>WiFi RGB Controller - {{}}</h3>
 			<div id="tabs">
 			<ul>
 			  <li><a href="javascript:void(0)" class="tablinks" id="colours" onclick="openTab(event, 'Colours')">Colours</a></li>
-			  <li class = "last" ><a href="javascript:void(0)" class="tablinks" id="settings" onclick="openTab(event, 'Settings')">Device Settings</a></li>
+				<li><a href="javascript:void(0)" class="tablinks" id="colours" onclick="openTab(event, 'Effects')">Effects</a></li>
+				<li><a href="javascript:void(0)" class="tablinks" id="settings" onclick="openTab(event, 'Settings')">Settings</a></li>
 			</ul>
 		</div>
 			<div id="Colours" class="tabcontent">
-	      <h3>Colour Select</h3>
+	      <h4>Colour Select</h4>
 	      <input class='jscolor' onchange='update(this.jscolor)' value='FFFEFD'>
 	      <br><br>
 	      <button class="cl" style="background-color:red" onclick="sendRGB(255,0,0)">Red</button>
@@ -199,25 +208,42 @@
 	          <label>B:</label>
 	          <input type="range" id="b" value="0" name="b" min="0" max="255" style="width: 70%" onchange="updateSliders();">
 	      </sliderss>
-				<h3>Kelvin Scale</h3>
+				<h4>Kelvin Scale</h4>
 				<label>800</label>
 				<input type="range" id="r" value="0" name="r" min="800" max="7000" style="width: 70%" onchange="sendKelvin(this.value);">
 				<label>7000</label>
 				<br>
-	      <h3>Brightness</h3>
+	      <h4>Brightness</h4>
 	      <input type="range" min="0" max="100" value="100" onchange="updateBrightness(this.value/100);" >
 	      <br><br>
 	      <button class="cl" style="width:50%" onclick="sendCommand(off)">Turn Off</button>
-	      <br><br>
-				<h3>Set Boot Colour</h3>
+	      <br>
+				<h4>Set Boot Colour</h4>
 				<input class='jscolor' id="jsbootColour" value='FFFEFD'>
 				<button class="cl" onclick="setBootColour()">Apply</button>
 				<button class="cl" onclick="clearBootColour()">Clear</button>
+				<br/>
+			</div>
+			<div id="Effects" class="tabcontent">
+				<h4>Speed (ms)</h4>
+				<label>100</label>
+				<input type="range" id="t" value="1000" name="r" min="100" max="7000" style="width: 60%">
+				<label>7000</label>
+				<br/><br/>
+				<button style="width:50%" onclick="randomFade()">Random Fade</button>
+				<br/><br/>
+				<button style="width:50%" onclick="rainbow()">Rainbow</button>
+				<br/><br/>
+				<button style="width:50%" onclick="flash()">Flash</button>
+				<br/><br/>
+				<button style="width:50%" onclick="stopAll()">Stop All</button>
+				<br/><br/>
 			</div>
 			<div id="Settings" class="tabcontent">
-				<button style="width:40%" onclick="restartDevice()">Restart</button>
+				<button style="width:50%" onclick="restartDevice()">Restart</button>
 				<br/><br/>
 				<button style="width:50%" onclick="resetSettings()">Reset Settings</button>
+				<br/><br/>
 			</div>
 		</div>
 		<script>

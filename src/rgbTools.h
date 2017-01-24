@@ -13,6 +13,8 @@
   void fadeRGBBlocking(rgb fadeRGB, int timespan);
   void startRandom(int timespan);
   void stopRandom();
+  void startFlash(int timespan);
+  void stopFlash();
   rgb randomColour();
   void off();
 #endif

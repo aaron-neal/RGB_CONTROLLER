@@ -28,6 +28,11 @@ byte _color[3];
 byte _count, _a0, _a1, _a2;
 int _randomTimespan;
 
+/* Flash */
+bool _flash = false;
+rgb _flashColour;
+int _flashTimespan;
+
 void setupRGB (int rPin, int gPin, int bPin, int wPin) {
   redPin = rPin;
   greenPin = gPin;
@@ -80,6 +85,15 @@ void rgbLoop()
       }
       _lastUpdate = current_millis;
     }
+  }
+
+  if(_flash && current_millis - _lastUpdate >= _flashTimespan){
+    if(_flashColour.r == _currentRGB.r){
+      _currentRGB = {0,0,0,0};
+    } else {
+      _currentRGB = _flashColour;
+    }
+    _lastUpdate = current_millis;
   }
   //always set colours
   analogWrite(redPin, _currentRGB.r * _brightness);
@@ -157,12 +171,23 @@ rgb randomColour(){
   return randomRGB;
 }
 
+void startFlash(int timespan){
+  _flashTimespan = timespan;
+  _flash = true;
+  _flashColour = _currentRGB;
+}
+
+void stopFlash(){
+  _flash = false;
+}
+
 void setRGB(rgb setRGB)
 {
    //will reset kelvin value as well, so that proper fading can occur
    _fadingRGB = false;
    _fadingKelvin = false;
    _randomColours = false;
+   _flash = false;
    setRGB.r = constrain(setRGB.r, 0, 255);
    setRGB.g = constrain(setRGB.g, 0, 255);
    setRGB.b = constrain(setRGB.b, 0, 255);

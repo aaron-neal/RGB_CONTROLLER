@@ -16,7 +16,7 @@ WiFiClient wclient;//WiFi Object
 PubSubClient client(wclient);//MQTT Object
 ESP8266WebServer server(80);
 
-#define RGBW //Undef this if non RGBW version of board
+#undef RGBW //Undef this if non RGBW version of board
 
 /* PIN DEFINES */
 #ifdef RGBW
@@ -28,6 +28,7 @@ ESP8266WebServer server(80);
   #define R_PIN 12
   #define G_PIN 13
   #define B_PIN 14
+  #define W_PIN 15 //does nothing, is not connected
 #endif
 
 #define mqttRetries 3
@@ -82,6 +83,21 @@ void setup () {
    wifiManager.setSaveConfigCallback(saveConfigCallback);
    wifiManager.setAPCallback(configModeCallback);
 
+   //read updated parameters
+   strcpy(deviceName, custom_device_name.getValue());
+   strcpy(mqttBroker, custom_mqtt_server.getValue());
+   strcpy(mqttPort, custom_mqtt_port.getValue());
+   strcpy(mqttUsername, custom_mqtt_username.getValue());
+   strcpy(mqttPassword, custom_mqtt_password.getValue());
+
+   char hostName[50];
+   if(strlen(deviceName) != 0){
+     sprintf(hostName,"RGBW Strip(%s)-%d",deviceName, ESP.getChipId());
+   } else {
+     sprintf(hostName,"RGBW(Setup)-%d",ESP.getChipId());
+   }
+   WiFi.hostname("RGBW Strip"); //we don't have a device name
+
    if (!wifiManager.autoConnect("RGB_WiFi", "password")) {
      debug("failed to connect and hit timeout");
      delay(3000);
@@ -93,13 +109,6 @@ void setup () {
    //if you get here you have connected to the WiFi
    debug("WiFi connected");
    fadeRGBBlocking({0,0,0},100);
-   //read updated parameters
-   strcpy(deviceName, custom_device_name.getValue());
-   strcpy(mqttBroker, custom_mqtt_server.getValue());
-   strcpy(mqttPort, custom_mqtt_port.getValue());
-   strcpy(mqttUsername, custom_mqtt_username.getValue());
-   strcpy(mqttPassword, custom_mqtt_password.getValue());
-
    //save the custom parameters to FS
    if (shouldSaveConfig) {
      saveConfig();
@@ -112,7 +121,7 @@ void setup () {
    //server stuff
    if (MDNS.begin(mdnsName)) {
      debug("MDNS responder started");
-     MDNS.addService("http", "tcp", 80);
+     MDNS.addService("rgb_controller", "tcp", 80);
    }
 
    server.on("/", HTTP_POST, handleSubmit);
@@ -126,8 +135,8 @@ void setup () {
 void loop(){
   if(boot == 0){
     //perform a green glow to indicate we are connected to the network
-    fadeRGBBlocking({0,255,0},500); //glow green
-    fadeRGBBlocking({0,0,0},500); //show were up and running
+    fadeRGBBlocking({0,255,0,0},500); //glow green
+    fadeRGBBlocking({0,0,0,0},500); //show were up and running
     delay(500);
     if(strlen(bootCommand) != 0){
       mqttCommandQueue.push(bootCommand);
@@ -168,6 +177,7 @@ void commandDecode(String rawCommand){
   colourData.r = root["r"];
   colourData.g = root["g"];
   colourData.b = root["b"];
+  colourData.w = root["w"];
   int timespan = root["timespan"];
   int kelvin = root["kelvin"];
   double brightness = root["brightness"];
@@ -197,13 +207,12 @@ void commandDecode(String rawCommand){
      setBrightness(brightness);
   } else if(command == "off"){
      //turn lights off
-    debug("Command: Off");
+    debug("Command: off");
     off();
   } else if(command == "resetSettings") {
     debug("Command: resetSettings");
     factoryReset();
   } else if(command == "setBootColour") {
-
     debug("Command: setBootColour");
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
@@ -228,6 +237,10 @@ void commandDecode(String rawCommand){
     startRandom(timespan);
   } else if(command == "stopRandomColours") {
     stopRandom();
+  }else if(command == "startFlash") {
+    startFlash(timespan);
+  }else if(command == "stopFlash") {
+    stopFlash();
   } else {
     debug("That command is not supported!");
   }
@@ -241,7 +254,7 @@ void saveConfigCallback () {
 }
 //calback notifying of config mode
 void configModeCallback (WiFiManager *myWiFiManager) {
-  fadeRGBBlocking({100,0,0},500);
+  fadeRGBBlocking({100,0,0,0},500);
 }
 /*-----------------MQTT Functions-----------------*/
 void mqttRecvCallback(char* topic, byte* payload, unsigned int length) {
@@ -254,7 +267,6 @@ void mqttSetup(){
   client.setServer(mqttBroker, atoi(mqttPort));
   client.setCallback(mqttRecvCallback);
   sprintf(mqttID,"%d",ESP.getChipId());
-  sprintf(mdnsName,"RGB-%d",ESP.getChipId());
   sprintf(mqttStatusChannel,"esp/rgblight/%d/status", ESP.getChipId());
   sprintf(mqttCommandChannel,"esp/rgblight/%d/command", ESP.getChipId());
   sprintf(mqttDebugChannel,"esp/rgblight/%d/debug", ESP.getChipId());
