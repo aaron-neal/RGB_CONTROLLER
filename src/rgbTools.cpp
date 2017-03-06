@@ -32,6 +32,7 @@ int _randomTimespan;
 bool _flash = false;
 rgb _flashColour;
 int _flashTimespan;
+bool _flashState = false;
 
 void setupRGB (int rPin, int gPin, int bPin, int wPin) {
   redPin = rPin;
@@ -41,7 +42,7 @@ void setupRGB (int rPin, int gPin, int bPin, int wPin) {
 
   analogWriteRange(255); //use 0 --> 255 as pwm range
   analogWriteFreq(1000); //set PWM freq.
-  
+
   analogWrite(redPin, 0);
   analogWrite(greenPin, 0);
   analogWrite(bluePin, 0);
@@ -88,10 +89,12 @@ void rgbLoop()
   }
 
   if(_flash && current_millis - _lastUpdate >= _flashTimespan){
-    if(_flashColour.r == _currentRGB.r){
+    if(_flashState){
       _currentRGB = {0,0,0,0};
+      _flashState = false;
     } else {
       _currentRGB = _flashColour;
+      _flashState = true;
     }
     _lastUpdate = current_millis;
   }

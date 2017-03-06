@@ -158,10 +158,11 @@ void loop(){
     boot=1;
   }
 
+  rgbLoop();
   client.loop(); //update MQTT client
   server.handleClient(); //update server handling
   drd.loop();//double reset loop
-  rgbLoop();
+    
   if (WiFi.status() == WL_CONNECTED)
   {
      if (!client.connected() && strlen(mqttBroker) != 0 && mqttFailCount < mqttRetries) //dont use MQTT if no broker set
