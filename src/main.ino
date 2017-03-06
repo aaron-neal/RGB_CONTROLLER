@@ -10,11 +10,13 @@
 #include <ESP8266mDNS.h>
 #include "webPage.h"
 #include "rgbTools.h"
+#include <DoubleResetDetector.h>
 
 
 WiFiClient wclient;//WiFi Object
 PubSubClient client(wclient);//MQTT Object
 ESP8266WebServer server(80);
+
 
 #undef RGBW //Undef this if non RGBW version of board
 
@@ -32,13 +34,19 @@ ESP8266WebServer server(80);
 #endif
 
 #define mqttRetries 3
+// Number of seconds after reset during which a
+// subseqent reset will be considered a double reset.
+#define DRD_TIMEOUT 10
+// RTC Memory Address for the DoubleResetDetector to use
+#define DRD_ADDRESS 0
+DoubleResetDetector drd(DRD_TIMEOUT, DRD_ADDRESS);
 
 /* MQTT configuration*/
 std::queue <String> mqttCommandQueue;
-char mqttBroker[40] =  "";
-char mqttUsername[40] = "";
-char mqttPassword[40] = "";
-char mqttPort[6] = "";
+char mqttBroker[40];
+char mqttUsername[40];
+char mqttPassword[40];
+char mqttPort[6];
 char mqttID [10];
 char mqttCommandChannel [50];
 char mqttStatusChannel [50];
@@ -62,8 +70,12 @@ void setup () {
 
    WiFiManager wifiManager;
    //clean FS and settings, for testing
-   //SPIFFS.format();
-   //wifiManager.resetSettings();
+   if (drd.detectDoubleReset()) {
+    Serial.println("Double Reset Detected");
+    SPIFFS.format();
+    wifiManager.resetSettings();
+   }
+
 
    openConfig();
 
@@ -83,14 +95,8 @@ void setup () {
    wifiManager.setSaveConfigCallback(saveConfigCallback);
    wifiManager.setAPCallback(configModeCallback);
 
-   //read updated parameters
-   strcpy(deviceName, custom_device_name.getValue());
-   strcpy(mqttBroker, custom_mqtt_server.getValue());
-   strcpy(mqttPort, custom_mqtt_port.getValue());
-   strcpy(mqttUsername, custom_mqtt_username.getValue());
-   strcpy(mqttPassword, custom_mqtt_password.getValue());
-
    char hostName[50];
+
    if(strlen(deviceName) != 0){
      sprintf(hostName,"RGBW Strip(%s)-%d",deviceName, ESP.getChipId());
    } else {
@@ -109,6 +115,14 @@ void setup () {
    //if you get here you have connected to the WiFi
    debug("WiFi connected");
    fadeRGBBlocking({0,0,0},100);
+
+   //read updated parameters from wifimanager after connection
+   strcpy(deviceName, custom_device_name.getValue());
+   strcpy(mqttBroker, custom_mqtt_server.getValue());
+   strcpy(mqttPort, custom_mqtt_port.getValue());
+   strcpy(mqttUsername, custom_mqtt_username.getValue());
+   strcpy(mqttPassword, custom_mqtt_password.getValue());
+
    //save the custom parameters to FS
    if (shouldSaveConfig) {
      saveConfig();
@@ -146,6 +160,7 @@ void loop(){
 
   client.loop(); //update MQTT client
   server.handleClient(); //update server handling
+  drd.loop();//double reset loop
   rgbLoop();
   if (WiFi.status() == WL_CONNECTED)
   {

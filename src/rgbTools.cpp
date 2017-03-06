@@ -41,7 +41,7 @@ void setupRGB (int rPin, int gPin, int bPin, int wPin) {
 
   analogWriteRange(255); //use 0 --> 255 as pwm range
   analogWriteFreq(1000); //set PWM freq.
-  delay(50);
+  
   analogWrite(redPin, 0);
   analogWrite(greenPin, 0);
   analogWrite(bluePin, 0);
