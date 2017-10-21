@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <FS.h>                   //this needs to be first, or it all crashes and burns...
+#include <FS.h>               //this needs to be first, or it all crashes and burns...
 #include <ESP8266WiFi.h>      //ESP8266 WiFi driver
 #include <PubSubClient.h>     //MQTT Library
 #include <queue>
@@ -11,14 +11,15 @@
 #include "webPage.h"
 #include "rgbTools.h"
 #include <DoubleResetDetector.h>
+#include <ESP8266HTTPUpdateServer.h>
 
 
 WiFiClient wclient;//WiFi Object
 PubSubClient client(wclient);//MQTT Object
 ESP8266WebServer server(80);
+ESP8266HTTPUpdateServer httpUpdater;
 
-
-#undef RGBW //Undef this if non RGBW version of board
+#define RGBW //Undef this if non RGBW version of board
 
 /* PIN DEFINES */
 #ifdef RGBW
@@ -57,7 +58,7 @@ int mqttFailCount = 0;
 
 bool shouldSaveConfig = false; //flag for saving data
 
-char mdnsName[40] = "";
+char hostName[50] = "";
 char deviceName[40] = "";
 
 bool debugBool = true;
@@ -95,14 +96,9 @@ void setup () {
    wifiManager.setSaveConfigCallback(saveConfigCallback);
    wifiManager.setAPCallback(configModeCallback);
 
-   char hostName[50];
+   sprintf(hostName,"rgb-%d",ESP.getChipId());
 
-   if(strlen(deviceName) != 0){
-     sprintf(hostName,"RGBW Strip(%s)-%d",deviceName, ESP.getChipId());
-   } else {
-     sprintf(hostName,"RGBW(Setup)-%d",ESP.getChipId());
-   }
-   WiFi.hostname("RGBW Strip"); //we don't have a device name
+   WiFi.hostname(hostName); //we don't have a device name
 
    if (!wifiManager.autoConnect("RGB_WiFi", "password")) {
      debug("failed to connect and hit timeout");
@@ -115,6 +111,11 @@ void setup () {
    //if you get here you have connected to the WiFi
    debug("WiFi connected");
    fadeRGBBlocking({0,0,0},100);
+   
+  //server stuff
+  MDNS.begin(hostName);      
+    
+    
 
    //read updated parameters from wifimanager after connection
    strcpy(deviceName, custom_device_name.getValue());
@@ -132,23 +133,21 @@ void setup () {
    debug(WiFi.localIP().toString());
    mqttSetup(); //sets all the mqtt topics based on the chip-id
 
-   //server stuff
-   if (MDNS.begin(mdnsName)) {
-     debug("MDNS responder started");
-     MDNS.addService("rgb_controller", "tcp", 80);
-   }
-
+   httpUpdater.setup(&server); //put update path in server
    server.on("/", HTTP_POST, handleSubmit);
    server.on("/", HTTP_GET, handleRoot);
    server.onNotFound(handleNotFound);
 
    server.begin();
    debug("HTTP server started");
+   MDNS.addService("rgb_controller", "tcp", 80);
 }
 
 void loop(){
   if(boot == 0){
     //perform a green glow to indicate we are connected to the network
+    fadeRGBBlocking({0,255,0,0},500); //glow green
+    fadeRGBBlocking({0,0,0,0},500); //show were up and running
     fadeRGBBlocking({0,255,0,0},500); //glow green
     fadeRGBBlocking({0,0,0,0},500); //show were up and running
     delay(500);
