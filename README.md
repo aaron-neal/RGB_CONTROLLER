@@ -2,18 +2,19 @@
 
 Commands are shared between the self hosted website and over MQTT. These are in a JSON form i.e.
 
-* {"command":"setRGB","r":'255', "g":'255', "b":'255'}
-* {"command":"setKelvin","kelvin":'1400'}
-* {"command":"setBrightness","brightness":'0.5'}
+* ```{"command":"setRGB","r":'255', "g":'255', "b":'255'}```
+* ```{"command":"setKelvin","kelvin":'1400'}```
+* ```{"command":"setBrightness","brightness":'0.5'}```
 
 ### Relevant MQTT channels:
 
-esp/rgblight/%d/status
-esp/rgblight/%d/command   <--- %d should be replaced by the unique ID of the device
-esp/rgblight/%d/debug
+* ```esp/rgblight/%d/status```
+* ```esp/rgblight/%d/command```   <--- ```%d``` should be replaced by the unique ID of the device
+* ```esp/rgblight/%d/debug```
 
 ### Finding devices
 
 Subscribe and save to the debug console:
 
 esp/rgblight/+/status 
+
